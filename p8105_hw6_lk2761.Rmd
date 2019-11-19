@@ -1,0 +1,10 @@
+---
+title: "p8105_hw6_lk2761"
+author: "Lorraine Kwok"
+date: "November 19, 2019"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
