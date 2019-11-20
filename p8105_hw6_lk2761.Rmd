@@ -27,3 +27,25 @@ theme_set(theme_minimal() + theme(legend.position = "bottom"))
 
 set.seed(1)
 ```
+
+## Problem 1
+
+This problem utilizes data on children's birthweight and variables that may be related to this variable. 
+
+This code chunk loads and tidies the data. 
+
+```{r}
+birthweight = 
+  read_csv("./data/birthweight.csv") %>%
+  janitor::clean_names() %>%
+  mutate(
+    babysex = as.factor(babysex),
+    frace = as.factor(frace),
+    mrace = as.factor(mrace),
+    babysex = recode(babysex, `1` = "male", `2` = "female"),
+    frace = recode(frace, `1` = "white", `2` = "black", `3` = "asian", `4` = "puerto rican", `8` = "other", `9` = "unknown"),
+    mrace = recode(mrace, `1` = "white", `2` = "black", `3` = "asian", `4` = "puerto rican", `8` = "other"),
+    malform = recode(malform, `0` = "absent", `1` = "present")) %>%
+  view()
+```
+
