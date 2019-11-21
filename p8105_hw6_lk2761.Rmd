@@ -142,56 +142,53 @@ weather_df =
   select(name, id, everything())
 ```
 
-This draws one bootstrap sample.
+This code chunk draws 5000 bootstrap samples and saves them in two different dataframes: one with the adjusted R-squared value and one with the beta coefficients. 
 
 ```{r}
-boot_sample = function(df) {
-  sample_frac(df, replace = TRUE)
-}
-```
-
-```{r}
-boot_sample(weather_df) %>% 
-  ggplot(aes(x = tmin, y = tmax)) + 
-  geom_point(alpha = .5) +
-  stat_smooth(method = "lm")
-```
-
-Now we will draw 5000 bootstrap samples.
-
-```{r}
-boot_straps = 
-  data_frame(
-    strap_number = 1:5000,
-    strap_sample = rerun(5000, boot_sample(weather_df))
-  )
-```
-
-Checking if bootstrapping is working
-
-```{r}
-boot_straps %>% 
-  filter(strap_number %in% 1:2) %>% 
-  mutate(strap_sample = map(strap_sample, ~arrange(.x, tmin))) %>% 
-  pull(strap_sample)
-```
-
-```{r}
-fit_2 = lm(tmax ~ tmin, data = weather_df)
-```
-
-```{r}
-fit_2 %>%
-  broom::glance()
-```
-
-```{r}
-weather_df %>% 
+weather_r =
+  weather_df %>% 
   modelr::bootstrap(n = 5000) %>% 
   mutate(
     models = map(strap, ~lm(tmax ~ tmin, data = .x) ),
     results = map(models, broom::glance)) %>% 
   select(-strap, -models) %>% 
-  unnest(results) 
+  unnest(results) %>%
+  janitor::clean_names() %>%
+  mutate(
+    lower_bound = quantile(adj_r_squared, 0.025),
+    upper_bound = quantile(adj_r_squared, 0.975)
+  )
+```
+
+```{r}
+weather_r %>%
+  ggplot(aes(x = adj_r_squared)) +
+  geom_density()
+```
+
+```{r}
+weather_log =
+  weather_df %>% 
+  modelr::bootstrap(n = 5000) %>% 
+  mutate(
+    models = map(strap, ~lm(tmax ~ tmin, data = .x) ),
+    results = map(models, broom::tidy)) %>% 
+  select(-strap, -models) %>% 
+  unnest(results) %>%
+  pivot_wider(names_from = term,
+              values_from = estimate) %>%
+  janitor::clean_names() %>%
+  select(id, intercept, tmin) %>%
+  group_by(id) %>%
+  summarise_all(na.omit) %>%
+  mutate(
+    log_betas = log(intercept*tmin)
+  )
+```
+
+```{r}
+weather_log %>%
+  ggplot(aes(x = log_betas)) + 
+  geom_density()
 ```
 
