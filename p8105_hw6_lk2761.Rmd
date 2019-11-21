@@ -9,6 +9,7 @@ output: github_document
 library(tidyverse)
 library(broom)
 library(modelr)
+library(mgcv)
 
 knitr::opts_chunk$set(
 	echo = TRUE,
@@ -65,5 +66,55 @@ birthweight %>%
   modelr::add_predictions(fit) %>%
   ggplot(aes(x = pred, y = resid)) + 
   geom_point()
+```
+
+The following code chunk generates two other models.
+
+```{r}
+fit_main = lm(bwt ~ blength + gaweeks, data = birthweight)
+
+fit_interaction = lm(bwt ~ bhead + blength + babysex + bhead * blength + bhead * babysex + blength * babysex + bhead * blength * babysex, data = birthweight)
+```
+
+We will use `crossv_mc` to compare the three models to each other. 
+
+```{r}
+cv_df = 
+  crossv_mc(birthweight, 100) 
+
+cv_df %>% pull(train) %>% .[[1]] %>% as_tibble
+
+cv_df %>% pull(test) %>% .[[1]] %>% as_tibble
+```
+
+```{r}
+cv_df =
+  cv_df %>% 
+  mutate(
+    train = map(train, as_tibble),
+    test = map(test, as_tibble))
+```
+
+```{r}
+cv_df = 
+  cv_df %>% 
+  mutate(my_mod  = map(train, ~lm(bwt ~ momage + smoken + ppbmi + ppwt + delwt, data = .x)),
+         main_mod  = map(train, ~mgcv::gam(bwt ~ blength + gaweeks, data = .x)),
+         interaction_mod  = map(train, ~gam(bwt ~ bhead + blength + babysex + bhead * blength + bhead * babysex + blength * babysex + bhead * blength * babysex, data = .x))) %>% 
+  mutate(rmse_my = map2_dbl(my_mod, test, ~rmse(model = .x, data = .y)),
+         rmse_main = map2_dbl(main_mod, test, ~rmse(model = .x, data = .y)),
+         rmse_interaction = map2_dbl(interaction_mod, test, ~rmse(model = .x, data = .y))) %>% view()
+```
+
+```{r}
+cv_df %>% 
+  dplyr::select(starts_with("rmse")) %>% 
+  pivot_longer(
+    everything(),
+    names_to = "model", 
+    values_to = "rmse",
+    names_prefix = "rmse_") %>% 
+  mutate(model = fct_inorder(model)) %>% 
+  ggplot(aes(x = model, y = rmse)) + geom_violin()
 ```
 
