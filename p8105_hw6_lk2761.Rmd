@@ -155,14 +155,14 @@ weather_r =
   unnest(results) %>%
   janitor::clean_names() %>%
   mutate(
-    lower_bound = quantile(adj_r_squared, 0.025),
-    upper_bound = quantile(adj_r_squared, 0.975)
+    lower_bound = quantile(r_squared, 0.025),
+    upper_bound = quantile(r_squared, 0.975)
   )
 ```
 
 ```{r}
 weather_r %>%
-  ggplot(aes(x = adj_r_squared)) +
+  ggplot(aes(x = r_squared)) +
   geom_density()
 ```
 
@@ -182,7 +182,9 @@ weather_log =
   group_by(id) %>%
   summarise_all(na.omit) %>%
   mutate(
-    log_betas = log(intercept*tmin)
+    log_betas = log(intercept*tmin),
+    lower_bound = quantile(log_betas, 0.025),
+    upper_bound = quantile(log_betas, 0.975)
   )
 ```
 
