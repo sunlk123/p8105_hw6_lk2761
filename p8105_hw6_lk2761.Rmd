@@ -52,7 +52,7 @@ birthweight =
   view()
 ```
 
-This code chunk fits a regression model. The predictors included are `momage`, `smoken`, `ppbmi`, `ppwt` and `delwt`.  
+This code chunk fits a regression model. The predictors included are `momage`, `smoken`, `ppbmi`, `ppwt` and `delwt`. 
 
 ```{r}
 fit = lm(bwt ~ momage + smoken + ppbmi + ppwt + delwt, data = birthweight)
@@ -106,9 +106,11 @@ cv_df =
          rmse_interaction = map2_dbl(interaction_mod, test, ~rmse(model = .x, data = .y))) %>% view()
 ```
 
+This code generates a violin plot that compares the three models using the root mean squared error (RMSE). 
+
 ```{r}
 cv_df %>% 
-  dplyr::select(starts_with("rmse")) %>% 
+  select(starts_with("rmse")) %>% 
   pivot_longer(
     everything(),
     names_to = "model", 
@@ -118,3 +120,4 @@ cv_df %>%
   ggplot(aes(x = model, y = rmse)) + geom_violin()
 ```
 
+Based on the plot that is generated, I would select the model with the interaction terms as it has the lowest RMSE of the three models. 
